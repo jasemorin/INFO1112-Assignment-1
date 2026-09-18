@@ -1,0 +1,67 @@
+#! /bin/bash
+
+die() { echo "assembler: $*"; exit 1; }   # TODO: doc says STDOUT, confirm on Ed (else add >&2 here)
+
+
+# ---- 1. Check arguments -----------------------
+[ ! $# -eq 1 ] && die "Usage: $0 <file.vsc>"
+[[ ! "$1" =~ \.vsc$ ]] && die "Error: File must have .vsc extension: $1"
+[ ! -f "$1" ] && die "Error: File not found: $1"
+
+
+# ---- 2. Read all non-empty lines --------------
+n_values=""       # number of static data (from line 1)
+values=()         # static data
+instructions=()   # un-parsed instruction lines
+
+while IFS= read -r line || [ -n "$line" ]; do
+  [ -z "$line" ] && continue
+
+  if [ -z "$n_values" ]; then
+    n_values="$line"
+  elif (( ${#values[@]} < n_values )); then
+    values+=("$line")
+  else
+    instructions+=("$line")
+  fi
+done < "$1"
+
+
+# ---- 3. Validate file structure ---------------
+# TODO: empty file -> warning message, no .bin produced
+# TODO: line 1 must be exactly "0" or "2"
+
+
+# ---- 4. QUIT program (line 1 == 0) ------------
+# TODO: print "It is a QUIT program"
+# TODO: line 2 must match QUIT,0,0 exactly, nothing else allowed
+# TODO: output bytes 20 00
+
+
+# ---- 5. ADD/SUB program (line 1 == 2) ---------
+# TODO: print "It is an ADD/SUB program" and the ----------- separator
+# TODO: lines 2 and 3 must be integers in [0,128)  (use a regex)
+
+
+# ---- 6. dec -> bin helper ---------------------
+# TODO: function using weighted sum 128 64 32 16 8 4 2 1
+# TODO: second helper to turn the 8-bit string into hex for printf
+
+
+# ---- 7. Instruction loop ----------------------
+# TODO: stop at QUIT,0,0 or after 100 instructions
+# TODO: reject any line longer than 11 characters
+# TODO: split on comma into ins / reg / mem
+# TODO: ins must be LOAD|STORE|ADD|SUB|QUIT|PRINT (case sensitive)
+# TODO: reg must be 0-3, not empty
+# TODO: mem must be 0-255, not empty
+# TODO: byte1 = opcode(6 bits) + reg(2 bits), byte2 = mem(8 bits)
+# TODO: append both bytes to dataArray
+# TODO: print "Line N: <text> ..... <VALID>" per line, real line numbers
+
+
+# ---- 8. Write out -----------------------------
+# TODO: only reached if everything above succeeded
+# TODO: printf '\xNN' >> "${1%.vsc}.bin" for each byte
+# TODO: print "***********", "Done with the conversion",
+#       "The content of the .bin file is:" then one hex byte per line

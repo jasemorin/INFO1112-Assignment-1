@@ -108,3 +108,17 @@ od -An -v -tu1 -w1 tests/prog1.bin | tr -d ' ' | tr '\n' ' '
 1. ADD 溢出：`200+100=300` 超过 1 字节，截断成 `% 256` 还是报错？
 2. SUB 失败时错误信息的具体格式有要求吗？stdout 还是 stderr？
 3. PRINT 输出是十进制吗？后面要不要换行？
+
+## die()
+Helper function. Breaking it down:
+
+
+die() { echo "assembler: $*" >&2; exit 1; }
+#  ^      ^                  ^     ^
+#  |      |                  |     └─ exit with failure status
+#  |      |                  └─ send to stderr, not stdout
+#  |      └─ all arguments, joined with spaces
+#  └─ function definition
+$* — every argument you passed, as one string. So die "File not found: $src" prints assembler: File not found: sample.vsc. ($@ would be the same here; $* is the conventional choice for message-joining.)
+>&2 — writes to file descriptor 2 (stderr) instead of 1 (stdout). Error messages belong on stderr so they don't get mixed into your program's real output if someone pipes it.
+exit 1 — stops the script with a non-zero status, which means "failed". exit 0 means success.
