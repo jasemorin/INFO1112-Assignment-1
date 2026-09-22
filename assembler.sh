@@ -24,3 +24,4 @@ echo "There are ${#lines[@]} lines in total"
 for i in "${!lines[@]}"; do
     echo " [$i] line $((i+1)): ${lines[i]}"
 done
+
