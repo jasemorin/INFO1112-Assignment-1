@@ -2,7 +2,7 @@
 DEBUG=0
 # --- Helper functions ---
 die() {
-    echo "assembler: $*"
+    echo "$*"
     exit 1
 }
 
@@ -33,14 +33,15 @@ binToHex() {
 }
 
 # --- 1. Check arguments ---------------------------------------
-# Check one argument provided
-[[ $# -ne 1 ]] && die "Usage: $0 <file.vsc>"
+# Messages below are fixed by the marking rubric - do not reword.
+((  $# == 0 )) && die "usage: no argument is provided"
+((  $# > 1  )) && die "usage: more than one arguments are provided"
 
-# Check argument file extension
-[[ ! "$1" == *.vsc ]] && die "Error: File must have .vsc extension: $1"
-
-# Check if file exists
-[[ ! -f "$1" ]] && die "Error: File not found: $1"
+# Order matters: `~` (a directory) must report "not a file", while `a.vs`
+# (missing AND wrong extension) must report the extension message.
+[[ -e "$1" && ! -f "$1" ]] && die "usage: input is not a file or it does not exist"
+[[ "$1" != *.vsc ]] && die "usage: input does not have the extension .vsc"
+[[ ! -f "$1" ]] && die "usage: input is not a file or it does not exist"
 
 # Check empty argument
 [[ -z "$1" ]] && die "Usage: $0 <file.vsc>"
@@ -64,7 +65,7 @@ fi
 
 # --- 3. Check file structure -----------------------------------
 # file is empty: warn and exit
-((${#lines[@]} == 0)) && die "Warning: $1 is empty, no .bin file produced."
+((${#lines[@]} == 0)) && die "usage: the file is empty – no .bin file is produced"
 
 # check firstline: 0->QUIT; 2->ADDSUB; other->Error
 if [[ "${lines[0]}" == "0" ]]; then
