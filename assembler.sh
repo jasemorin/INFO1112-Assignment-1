@@ -139,8 +139,8 @@ for ((i = 3; i < ${#lines[@]}; i++)); do
     line="${lines[i]}"
     lineno=$((i + 1))
 
-    # verify max is 100
-    ((lineno > 100)) && die "Error: file exceeds max number of instructions: $1"
+    # assumption: QUIT,0,0 counts towards the 100 instruction capacity
+    ((count >= 100)) && die "Error: file exceeds max number of instructions (100): $1"
 
     # check length
     ((${#line} > 11)) && die "Error: line exceeds max length (11): $lineno"
@@ -173,6 +173,28 @@ for ((i = 3; i < ${#lines[@]}; i++)); do
         ;;
     esac
 
+    # verify reg: digits only (also rejects empty), then range [0,3]
+    [[ "$reg" =~ ^[0-9]+$ ]] || die "Error: line $lineno has invalid reg: '$reg'"
+    reg=$((10#$reg))
+    ((reg <= 3)) || die "Error: line $lineno reg must be within [0,3]: $reg"
+
+    # verify mem: digits only (also rejects empty and '1,2'), then range [0,255]
+    [[ "$mem" =~ ^[0-9]+$ ]] || die "Error: line $lineno has invalid mem: '$mem'"
+    mem=$((10#$mem))
+    ((mem <= 255)) || die "Error: line $lineno mem must be within [0,255]: $mem"
+
+    # byte 1 = 6 bits opcode + 2 bits reg; byte 2 = 8 bits mem
+    # membin is global, so read it straight after each decToBin call
+    decToBin "$opcode"
+    opbin="${membin:2}"
+    decToBin "$reg"
+    regbin="${membin:6}"
+    byte1="$opbin$regbin"
+    decToBin "$mem"
+    byte2="$membin"
+
+    dataArray+=("$(binToHex "$byte1")" "$(binToHex "$byte2")")
+
     if [[ "$line" == "QUIT,0,0" ]]; then
         found_quit=1
         echo "Found the <QUIT> so ending the conversion procedure ....."
@@ -180,10 +202,21 @@ for ((i = 3; i < ${#lines[@]}; i++)); do
     fi
 
     count=$((count + 1))
-
-    # temp verify -----------------
-    echo "line $lineno: ins=$ins reg=$reg mem=$mem opcode=$opcode"
+    echo "Line $lineno: $line ..... <VALID>"
 done
 
 ((found_quit == 0)) && die "Error: File has no QUIT instruction: $1"
+
+# --- 7. write out -------------------------------------------------------
+outfile="${1%.vsc}.bin"
+: >"$outfile" # clear / create
+
+echo ""
+echo "***********"
+echo "Done with the conversion"
+echo "The content of the .bin file is:"
+for b in "${dataArray[@]}"; do
+    printf "\\x$b" >>"$outfile"
+    echo "$b"
+done
 fi
